@@ -4,7 +4,6 @@ import json, os
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "chave-padrao")
 
-# SENHA DO PAINEL (vem do Render)
 SENHA_PAINEL = os.environ.get("SENHA_PAINEL", "1234")
 
 DATA_FILE = "data/chamados.json"
@@ -48,35 +47,39 @@ def chamar():
     save_data(data)
     return "ok"
 
-# ---------- LOGIN ----------
-@app.route("/login", methods=["GET", "POST"])
-def login():
+# ---------- LOGIN (POR RESTAURANTE) ----------
+@app.route("/login/<restaurante>", methods=["GET", "POST"])
+def login(restaurante):
     erro = False
     if request.method == "POST":
         if request.form["senha"] == SENHA_PAINEL:
             session["logado"] = True
-            return redirect("/painel")
+            session["restaurante"] = restaurante
+            return redirect(f"/painel/{restaurante}")
         else:
             erro = True
-    return render_template("login.html", erro=erro)
+    return render_template("login.html", erro=erro, restaurante=restaurante)
 
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/login")
+    return redirect("/")
 
-# ---------- PAINEL ----------
-@app.route("/painel")
-def painel():
-    if not session.get("logado"):
-        return redirect("/login")
-    return render_template("painel.html")
+# ---------- PAINEL (POR RESTAURANTE) ----------
+@app.route("/painel/<restaurante>")
+def painel(restaurante):
+    if not session.get("logado") or session.get("restaurante") != restaurante:
+        return redirect(f"/login/{restaurante}")
+    return render_template("painel.html", restaurante=restaurante)
 
-@app.route("/status")
-def status():
-    if not session.get("logado"):
+@app.route("/status/<restaurante>")
+def status(restaurante):
+    if not session.get("logado") or session.get("restaurante") != restaurante:
         return jsonify({})
-    return jsonify(load_data())
+
+    data = load_data()
+    init_restaurante(data, restaurante)
+    return jsonify(data[restaurante])
 
 @app.route("/atender", methods=["POST"])
 def atender():

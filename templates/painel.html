@@ -1,0 +1,45 @@
+<h2>Painel do Garçom</h2>
+<div id="painel"></div>
+
+<script>
+function atualizar(){
+  fetch("/status")
+  .then(r => r.json())
+  .then(dados => {
+    let html = ""
+
+    for (let restaurante in dados){
+      html += `<h3>${restaurante}</h3>`
+      html += `<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;">`
+
+      for (let mesa in dados[restaurante]){
+        let ativo = dados[restaurante][mesa]
+        let cor = ativo ? "#e74c3c" : "#2ecc71"
+
+        html += `
+          <button 
+            style="background:${cor};padding:10px;color:white;border:none;border-radius:6px"
+            onclick="atender('${restaurante}',${mesa})">
+            Mesa ${mesa}
+          </button>
+        `
+      }
+
+      html += "</div>"
+    }
+
+    document.getElementById("painel").innerHTML = html
+  })
+}
+
+function atender(restaurante, mesa){
+  fetch("/atender",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:`restaurante=${restaurante}&mesa=${mesa}`
+  })
+}
+
+setInterval(atualizar, 5000)
+atualizar()
+</script>

@@ -1,59 +1,29 @@
 <h2>Painel - {{ restaurante }}</h2>
 
+<button onclick="ativarAlertas()" style="margin-bottom:15px;padding:10px 15px;">
+  🔔 Ativar alertas sonoros
+</button>
+
 <div id="alerta" style="margin-bottom:20px;"></div>
 <div id="painel"></div>
 
+<audio id="somAlerta">
+  <source src="/static/alerta.mp3" type="audio/mpeg">
+</audio>
+
 <script>
 const restaurante = "{{ restaurante }}";
+let mesasAtivas = {};
+let alertasAtivos = false;
 
-function atualizar(){
-  fetch(`/status/${restaurante}`)
-  .then(r => r.json())
-  .then(dados => {
-    let html = "";
-    let chamados = [];
-
-    html += `<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;">`;
-
-    for (let mesa in dados){
-      let ativo = dados[mesa];
-      if (ativo) chamados.push(`Mesa ${mesa}`);
-
-      let cor = ativo ? "#e74c3c" : "#2ecc71";
-
-      html += `
-        <button 
-          style="background:${cor};padding:10px;color:white;border:none;border-radius:6px;font-weight:bold"
-          onclick="atender(${mesa})">
-          Mesa ${mesa}
-        </button>
-      `;
-    }
-
-    html += "</div>";
-
-    document.getElementById("painel").innerHTML = html;
-
-    if (chamados.length > 0){
-      document.getElementById("alerta").innerHTML = `
-        <div style="background:#f39c12;padding:15px;color:white;font-size:18px;border-radius:8px;font-weight:bold">
-          🔔 Chamado ativo: ${chamados.join(", ")}
-        </div>
-      `;
-    } else {
-      document.getElementById("alerta").innerHTML = "";
-    }
-  })
+function ativarAlertas(){
+  alertasAtivos = true;
+  document.getElementById("somAlerta").play().catch(()=>{});
+  alert("Alertas ativados!");
 }
 
-function atender(mesa){
-  fetch("/atender",{
-    method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:`restaurante=${restaurante}&mesa=${mesa}`
-  })
-}
+function tocarAlerta(){
+  if (!alertasAtivos) return;
 
-setInterval(atualizar, 5000);
-atualizar();
-</script>
+  const audio = document.getElementById("somAlerta");
+  aud

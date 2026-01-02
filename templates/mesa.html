@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Mesa {{mesa}}</h2>
+
+<button onclick="chamar()">Chamar Garçom</button>
+
+<script>
+function chamar(){
+  fetch("/chamar",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"restaurante={{restaurante}}&mesa={{mesa}}"
+  })
+}
+</script>
+</body>
+</html>

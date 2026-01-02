@@ -1,4 +1,6 @@
 <h2>Painel do Garçom</h2>
+
+<div id="alerta" style="margin-bottom:20px;"></div>
 <div id="painel"></div>
 
 <script>
@@ -7,6 +9,7 @@ function atualizar(){
   .then(r => r.json())
   .then(dados => {
     let html = ""
+    let chamados = []
 
     for (let restaurante in dados){
       html += `<h3>${restaurante}</h3>`
@@ -14,11 +17,23 @@ function atualizar(){
 
       for (let mesa in dados[restaurante]){
         let ativo = dados[restaurante][mesa]
+
+        if (ativo){
+          chamados.push(`Mesa ${mesa}`)
+        }
+
         let cor = ativo ? "#e74c3c" : "#2ecc71"
 
         html += `
           <button 
-            style="background:${cor};padding:10px;color:white;border:none;border-radius:6px"
+            style="
+              background:${cor};
+              padding:10px;
+              color:white;
+              border:none;
+              border-radius:6px;
+              font-weight:bold;
+            "
             onclick="atender('${restaurante}',${mesa})">
             Mesa ${mesa}
           </button>
@@ -26,6 +41,24 @@ function atualizar(){
       }
 
       html += "</div>"
+    }
+
+    // ALERTA NO TOPO
+    if (chamados.length > 0){
+      document.getElementById("alerta").innerHTML = `
+        <div style="
+          background:#f39c12;
+          padding:15px;
+          color:white;
+          font-size:18px;
+          border-radius:8px;
+          font-weight:bold;
+        ">
+          🔔 Chamado ativo: ${chamados.join(", ")}
+        </div>
+      `
+    } else {
+      document.getElementById("alerta").innerHTML = ""
     }
 
     document.getElementById("painel").innerHTML = html

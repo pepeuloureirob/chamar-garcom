@@ -1,29 +1,45 @@
-<h2>Painel - {{ restaurante }}</h2>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Painel - {{ restaurante }}</title>
 
-<button onclick="ativarAlertas()" style="margin-bottom:15px;padding:10px 15px;">
-  🔔 Ativar alertas sonoros
-</button>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<div id="alerta" style="margin-bottom:20px;"></div>
-<div id="painel"></div>
-
-<audio id="somAlerta">
-  <source src="/static/alerta.mp3" type="audio/mpeg">
-</audio>
-
-<script>
-const restaurante = "{{ restaurante }}";
-let mesasAtivas = {};
-let alertasAtivos = false;
-
-function ativarAlertas(){
-  alertasAtivos = true;
-  document.getElementById("somAlerta").play().catch(()=>{});
-  alert("Alertas ativados!");
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 15px;
 }
 
-function tocarAlerta(){
-  if (!alertasAtivos) return;
+h2 {
+  margin-bottom: 10px;
+}
 
-  const audio = document.getElementById("somAlerta");
-  aud
+#ativar {
+  padding: 12px;
+  width: 100%;
+  max-width: 320px;
+  background: #34495e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+#alerta {
+  margin-bottom: 15px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+}
+
+.mesa {
+  padding: 14px 0;
+  border-radius: 10px

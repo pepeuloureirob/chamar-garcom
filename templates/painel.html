@@ -1,26 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/static/style.css">
-<script src="/static/painel.js" defer></script>
-</head>
-<body>
+<h2>Painel – {{ restaurante }}</h2>
+<div id="mesas"></div>
 
-<h2>Painel - {{ restaurante }}</h2>
-
-<form method="post" action="/cardapio">
-<input type="hidden" name="restaurante" value="{{ restaurante }}">
-<input type="url" name="link" placeholder="Link do cardápio (PDF / site)">
-<button class="btn">Salvar Cardápio</button>
-</form>
-
-<div id="mesas" class="grid"></div>
-
+<script src="/static/chamados.js"></script>
 <script>
-const REST = "{{ restaurante }}";
-const TOTAL = {{ total }};
+carregar("{{ restaurante }}")
 </script>
-
-</body>
-</html>

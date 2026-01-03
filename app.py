@@ -1,106 +1,117 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
-import json, os
+import json, os, time
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "mesaclick-seguro")
+app.secret_key = "mesaclick-premium"
 
-SENHA_PAINEL = os.environ.get("SENHA_PAINEL", "1234")
 TOTAL_MESAS = 100
-DATA_FILE = "data/chamados.json"
 
-# ---------- SETUP ----------
-os.makedirs("data", exist_ok=True)
-
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "w") as f:
-        json.dump({}, f)
-
-def load_data():
-    with open(DATA_FILE) as f:
+def load(path):
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
         return json.load(f)
 
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
+def save(path, data):
+    with open(path, "w") as f:
         json.dump(data, f)
 
-def init_restaurante(data, restaurante):
-    if restaurante not in data:
-        data[restaurante] = {
-            "mesas": {str(i): False for i in range(1, TOTAL_MESAS + 1)},
-            "cardapio": ""
-        }
+CHAMADOS = "data/chamados.json"
+USUARIOS = "data/usuarios.json"
+CARDAPIOS = "data/cardapios.json"
 
-# ---------- MESA ----------
-@app.route("/mesa/<restaurante>/<int:mesa>")
-def mesa(restaurante, mesa):
-    data = load_data()
-    init_restaurante(data, restaurante)
-    cardapio = data[restaurante]["cardapio"]
-    return render_template("mesa.html", restaurante=restaurante, mesa=mesa, cardapio=cardapio)
-
-@app.route("/chamar", methods=["POST"])
-def chamar():
-    data = load_data()
-    restaurante = request.form["restaurante"]
-    mesa = request.form["mesa"]
-
-    init_restaurante(data, restaurante)
-    data[restaurante]["mesas"][mesa] = True
-    save_data(data)
-    return "ok"
+for p in ["data"]:
+    os.makedirs(p, exist_ok=True)
 
 # ---------- LOGIN ----------
-@app.route("/login/<restaurante>", methods=["GET", "POST"])
+@app.route("/login/<restaurante>", methods=["GET","POST"])
 def login(restaurante):
     erro = False
     if request.method == "POST":
-        if request.form["senha"] == SENHA_PAINEL:
-            session["logado"] = True
-            session["restaurante"] = restaurante
-            return redirect(f"/painel/{restaurante}")
+        usuarios = load(USUARIOS)
+        u = request.form["usuario"]
+        s = request.form["senha"]
+
+        if restaurante in usuarios and u in usuarios[restaurante]:
+            if usuarios[restaurante][u]["senha"] == s:
+                session["user"] = u
+                session["tipo"] = usuarios[restaurante][u]["tipo"]
+                session["restaurante"] = restaurante
+                return redirect(f"/painel/{restaurante}")
         erro = True
-    return render_template("login.html", restaurante=restaurante, erro=erro)
+
+    return render_template("login.html", erro=erro)
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
+# ---------- MESA ----------
+@app.route("/mesa/<restaurante>/<int:mesa>")
+def mesa(restaurante, mesa):
+    cardapios = load(CARDAPIOS)
+    link = cardapios.get(restaurante, "")
+    return render_template("mesa.html", restaurante=restaurante, mesa=mesa, cardapio=link)
+
+@app.route("/chamar", methods=["POST"])
+def chamar():
+    data = load(CHAMADOS)
+    r = request.form["restaurante"]
+    m = request.form["mesa"]
+
+    data.setdefault(r, {})
+    data[r][m] = time.time()
+    save(CHAMADOS, data)
+    return "ok"
+
 # ---------- PAINEL ----------
 @app.route("/painel/<restaurante>")
 def painel(restaurante):
-    if not session.get("logado") or session.get("restaurante") != restaurante:
+    if "user" not in session:
         return redirect(f"/login/{restaurante}")
-    return render_template("painel.html", restaurante=restaurante, total=TOTAL_MESAS)
+    return render_template("painel.html", restaurante=restaurante)
 
 @app.route("/status/<restaurante>")
 def status(restaurante):
-    if not session.get("logado"):
-        return jsonify({"erro": "não autorizado"}), 403
-    data = load_data()
-    init_restaurante(data, restaurante)
-    return jsonify(data[restaurante])
+    data = load(CHAMADOS)
+    return jsonify(data.get(restaurante, {}))
 
 @app.route("/atender", methods=["POST"])
 def atender():
-    data = load_data()
-    restaurante = request.form["restaurante"]
-    mesa = request.form["mesa"]
-
-    init_restaurante(data, restaurante)
-    data[restaurante]["mesas"][mesa] = False
-    save_data(data)
+    data = load(CHAMADOS)
+    r = request.form["restaurante"]
+    m = request.form["mesa"]
+    data.get(r, {}).pop(m, None)
+    save(CHAMADOS, data)
     return "ok"
 
-@app.route("/cardapio", methods=["POST"])
-def cardapio():
-    data = load_data()
-    restaurante = request.form["restaurante"]
-    link = request.form["link"]
+# ---------- ADMIN ----------
+@app.route("/usuarios/<restaurante>", methods=["GET","POST"])
+def usuarios(restaurante):
+    if session.get("tipo") != "admin":
+        return "acesso negado", 403
 
-    init_restaurante(data, restaurante)
-    data[restaurante]["cardapio"] = link
-    save_data(data)
+    usuarios = load(USUARIOS)
+    usuarios.setdefault(restaurante, {})
+
+    if request.method == "POST":
+        usuarios[restaurante][request.form["usuario"]] = {
+            "senha": request.form["senha"],
+            "tipo": request.form["tipo"]
+        }
+        save(USUARIOS, usuarios)
+
+    return render_template("usuarios.html", usuarios=usuarios[restaurante])
+
+@app.route("/cardapio/<restaurante>", methods=["POST"])
+def cardapio(restaurante):
+    if session.get("tipo") != "admin":
+        return "negado", 403
+
+    cardapios = load(CARDAPIOS)
+    cardapios[restaurante] = request.form["link"]
+    save(CARDAPIOS, cardapios)
     return redirect(f"/painel/{restaurante}")
 
 if __name__ == "__main__":

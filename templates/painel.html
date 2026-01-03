@@ -1,7 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel – {{ restaurante }}</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 10px; text-align: center; }
+  button { padding: 10px 15px; margin: 5px; font-size: 16px; }
+  #mesas { margin-top: 20px; }
+</style>
+</head>
+<body>
 <h2>Painel – {{ restaurante }}</h2>
-<div id="mesas"></div>
 
-<script src="/static/chamados.js"></script>
+{% if session.tipo == "admin" %}
+  <a href="/usuarios/{{ restaurante }}">👥 Gerenciar Usuários</a><br>
+  <form action="/cardapio/{{ restaurante }}" method="POST" style="margin-top:10px;">
+    <input type="text" name="link" placeholder="Link do cardápio" style="width:70%">
+    <button type="submit">Salvar Cardápio</button>
+  </form>
+{% endif %}
+
+<div id="mesas">Carregando mesas...</div>
+
 <script>
-carregar("{{ restaurante }}")
+const restaurante = "{{ restaurante }}";
+
+// Função para atualizar mesas
+function carregar() {
+  fetch(`/status/${restaurante}`)
+    .then(r=>r.json())
+    .then(d=>{
+      let html=""
+      for (let m in d){
+        html+=`<button onclick="atender('${m}')">Mesa ${m}</button>`
+      }
+      document.getElementById("mesas").innerHTML = html || "Nenhum chamado";
+    })
+}
+
+// Atender mesa
+function atender(mesa){
+  fetch("/atender",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"restaurante="+restaurante+"&mesa="+mesa
+  }).then(()=>carregar())
+}
+
+// Atualiza a cada 3 segundos
+setInterval(carregar, 3000)
+carregar()
 </script>
+</body>
+</html>
